@@ -38,7 +38,7 @@ const Home = () => {
       </div>
 
       <footer>
-        <p>SER421 Fall 2025 | Advanced Project Team</p>
+        <p>SER421 Fall 2025 </p>
       </footer>
     </div>
   );
