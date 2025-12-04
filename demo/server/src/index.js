@@ -58,6 +58,13 @@ wss.on('connection', (ws) => {
 
   console.log('Client connected', { clientId });
 
+  ws.send(
+    JSON.stringify({
+      type: MessageTypes.ROOM_LIST_UPDATE,
+      payload: { rooms: getRoomMetaData() },
+    })
+  );
+
   ws.on('message', (data) => {
     try {
       const parsed = JSON.parse(data.toString());

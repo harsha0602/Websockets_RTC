@@ -205,10 +205,6 @@ const RoomPage = () => {
 
       <aside className='room-sidebar card-soft'>
         <h3 className='section-title'>Participants</h3>
-        <p className='section-subtitle'>
-          This list is hardcoded for now. Later you will populate it from
-          WebSocket presence events.
-        </p>
         <div className='participant-list'>
           {participants.map((p) => (
             <div key={p.id} className='participant'>

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const LobbyPage = () => {
   const [nickname, setNickname] = useState('');
   const [rooms, setRooms] = useState([]);
-  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [selectedRoomName, setSelectedRoomName] = useState(null);
   const navigate = useNavigate();
   const ws = useRef(null);
 
@@ -45,7 +45,7 @@ const LobbyPage = () => {
   };
 
   const handleJoinRoom = () => {
-    if (!selectedRoomId) {
+    if (!selectedRoomName) {
       alert('Please select a room to join.');
       return;
     }
@@ -53,7 +53,7 @@ const LobbyPage = () => {
       alert('Please enter a nickname.');
       return;
     }
-    navigate(`/room/${selectedRoomId}`, { state: { nickname } });
+    navigate(`/room/${selectedRoomName}`, { state: { nickname } });
   };
 
   return (
@@ -95,13 +95,13 @@ const LobbyPage = () => {
 
         <div className='room-list'>
           {rooms.map((room) => {
-            const selected = room.id === selectedRoomId;
+            const selected = room.name === selectedRoomName;
             return (
               <button
                 key={room.id}
                 type='button'
                 className={`room-card ${selected ? 'selected' : ''}`}
-                onClick={() => setSelectedRoomId(room.id)}
+                onClick={() => setSelectedRoomName(room.name)}
               >
                 <div className='room-card-main'>
                   <span className='room-dot' />
