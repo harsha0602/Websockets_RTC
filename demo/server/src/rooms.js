@@ -2,6 +2,10 @@
  * Participant shape:
  * { id, name, ws } where ws is the WebSocket connection.
  */
+
+const { v4: uuidv4 } = require('uuid');
+const rooms = new Map();
+
 class Room {
   constructor(id, name) {
     this.id = id;
@@ -12,36 +16,57 @@ class Room {
   }
 }
 
-function createRoom(name) {
-  // TODO: Create and register a new room with a unique id and provided name.
-  throw new Error('Not implemented');
+function getOrCreateRoom(name) {
+  if (rooms.has(name)) {
+    return rooms.get(name);
+  }
+  const newRoom = new Room(uuidv4(), name);
+  rooms.set(name, newRoom);
+  return newRoom;
 }
 
-function getOrCreateRoom(name) {
-  // TODO: Return an existing room by name or create one if it does not exist.
-  throw new Error('Not implemented');
+function joinRoom(roomName, participant) {
+  const room = getOrCreateRoom(roomName);
+  room.participants.set(participant.id, participant);
+  return room;
 }
 
 function removeParticipantFromAllRooms(participantId) {
-  // TODO: Remove the participant from every room and clean up empty rooms.
-  throw new Error('Not implemented');
+  const participantRemovedFromRooms = [];
+
+  for (const [roomName, room] of rooms.entries()) {
+    if (room.participants.has(participantId)) {
+      room.participants.delete(participantId);
+      participantRemovedFromRooms.push(room);
+
+      // Delete room if empty
+      if (room.participants.size === 0) {
+        rooms.delete(roomName);
+      }
+    }
+  }
+  return participantRemovedFromRooms;
 }
 
-function getRoomSummaries() {
-  // TODO: Return lightweight room metadata for lobby listings (id, name, counts).
-  throw new Error('Not implemented');
-}
+function addChatMessage(room, messageData) {
+  const chatEntry = {
+    id: uuidv4(),
+    sender: messageData.sender,
+    text: messageData.text,
+    timestamp: new Date().toISOString(),
+  };
 
-function addChatMessage(room, message) {
-  // TODO: Append chat messages, trimming to the last N entries for history.
-  throw new Error('Not implemented');
+  // Keep last 50 messages
+  room.chatHistory.push(chatEntry);
+  if (room.chatHistory.length > 50) {
+    room.chatHistory.shift();
+  }
+  return chatEntry;
 }
 
 module.exports = {
-  Room,
-  createRoom,
   getOrCreateRoom,
+  joinRoom,
   removeParticipantFromAllRooms,
-  getRoomSummaries,
   addChatMessage,
 };

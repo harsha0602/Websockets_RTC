@@ -1,6 +1,7 @@
 const http = require('http');
 const { WebSocketServer } = require('ws');
 const MessageTypes = require('./messages');
+const { getOrCreateRoom } = require('./rooms');
 
 const PORT = 3001;
 const server = http.createServer((req, res) => {
@@ -28,7 +29,10 @@ wss.on('connection', (ws) => {
       // TODO: Route message by parsed.type using MessageTypes.
       void parsed;
     } catch (err) {
-      console.error('Failed to parse message', { clientId, error: err.message });
+      console.error('Failed to parse message', {
+        clientId,
+        error: err.message,
+      });
     }
   });
 
