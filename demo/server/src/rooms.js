@@ -50,6 +50,10 @@ function getRoomSummaries() {
   return summaries;
 }
 
+function roomExists(name) {
+  return rooms.has(name);
+}
+
 function getOrCreateRoom(name) {
   if (rooms.has(name)) {
     return rooms.get(name);
@@ -112,6 +116,7 @@ module.exports = {
   addChatMessage,
   getRoomMetaData,
   getRoomSummaries,
+  roomExists,
   createParticipant,
   getParticipantDisplayInfo,
 };

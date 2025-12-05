@@ -139,3 +139,22 @@ This document captures the build steps for the Realtime Study Rooms demo so we c
 
 ### Checkpoint
 - With two browser tabs open on the lobby, creating a room in tab A should make that room appear in tab B within about a second, without pressing refresh.
+
+## Feature 4: Robust create and join room flow
+
+### Goal
+- Allow users to create and join rooms from the lobby with basic validation and friendly error messages, avoiding alerts or silent failures.
+
+### Files you will edit
+- demo/server/src/index.js
+- demo/client/src/pages/LobbyPage.jsx
+- demo/client/src/pages/RoomPage.jsx
+
+### Steps
+1. Validate room name and nickname on the client before sending create or join requests.
+2. On the server, validate `CREATE_ROOM` and `JOIN_ROOM` messages and reply with either a success payload or an `ERROR` payload.
+3. In `LobbyPage`, handle `ERROR` messages by setting an error state and rendering a small red message; on success, clear errors and navigate to `/room/:roomName`.
+4. In `RoomPage`, handle a failed join by showing a brief error and redirecting back to the lobby.
+
+### Checkpoint
+- Trying to join a non-existing room or leaving the nickname empty should show a clear message on the lobby, not a broken room view or a JavaScript error.

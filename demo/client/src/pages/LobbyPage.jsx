@@ -6,8 +6,14 @@ const LobbyPage = () => {
   const [nicknameError, setNicknameError] = useState('');
   const [rooms, setRooms] = useState([]);
   const [selectedRoomName, setSelectedRoomName] = useState(null);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const ws = useRef(null);
+  const nicknameRef = useRef('');
+
+  useEffect(() => {
+    nicknameRef.current = nickname;
+  }, [nickname]);
 
   useEffect(() => {
     // Tip: open two tabs; both subscribe here and will receive live ROOM_LIST_UPDATE pushes as rooms change.
@@ -25,6 +31,17 @@ const LobbyPage = () => {
         if (type === 'ROOM_LIST_UPDATE') {
           if (payload.rooms) {
             setRooms(payload.rooms);
+          }
+        } else if (type === 'ERROR') {
+          setError(payload?.reason || 'Something went wrong.');
+        } else if (
+          type === 'CREATE_ROOM_SUCCESS' ||
+          type === 'JOIN_ROOM_SUCCESS'
+        ) {
+          setError('');
+          const roomName = payload?.roomName;
+          if (roomName) {
+            navigate(`/room/${roomName}`, { state: { nickname: nicknameRef.current } });
           }
         }
       } catch (err) {
@@ -45,13 +62,23 @@ const LobbyPage = () => {
     setNicknameError('');
     const newRoomName = prompt('Enter new room name:');
     if (newRoomName) {
-      navigate(`/room/${newRoomName}`, { state: { nickname } });
+      setError('');
+      if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
+        setError('Connecting to server. Please try again in a moment.');
+        return;
+      }
+      ws.current?.send(
+        JSON.stringify({
+          type: 'CREATE_ROOM',
+          payload: { roomName: newRoomName, createdBy: nickname },
+        })
+      );
     }
   };
 
   const handleJoinRoom = () => {
     if (!selectedRoomName) {
-      alert('Please select a room to join.');
+      setError('Please select a room to join.');
       return;
     }
     if (!nickname.trim()) {
@@ -59,7 +86,17 @@ const LobbyPage = () => {
       return;
     }
     setNicknameError('');
-    navigate(`/room/${selectedRoomName}`, { state: { nickname } });
+    setError('');
+    if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
+      setError('Connecting to server. Please try again in a moment.');
+      return;
+    }
+    ws.current?.send(
+      JSON.stringify({
+        type: 'JOIN_ROOM',
+        payload: { roomName: selectedRoomName, name: nickname },
+      })
+    );
   };
 
   return (
@@ -147,6 +184,9 @@ const LobbyPage = () => {
             Join selected room
           </button>
         </div>
+        {error && (
+          <p style={{ color: '#d22', marginTop: 8, fontSize: 13 }}>{error}</p>
+        )}
       </section>
     </div>
   );

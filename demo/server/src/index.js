@@ -7,6 +7,7 @@ const {
   removeParticipantFromAllRooms,
   addChatMessage,
   getRoomMetaData,
+  roomExists,
 } = require('./rooms');
 
 const PORT = 3001;
@@ -28,6 +29,31 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocketServer({ server });
 
 let nextClientId = 1;
+
+function sendJson(ws, message) {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(message));
+  }
+}
+
+function sendError(ws, reason, details = {}) {
+  sendJson(ws, {
+    type: MessageTypes.ERROR,
+    payload: { reason, ...details },
+  });
+}
+
+function buildRoomStatePayload(room) {
+  return {
+    roomId: room.id,
+    roomName: room.name,
+    participants: Array.from(room.participants.values()).map((p) => ({
+      id: p.id,
+      name: p.name,
+    })),
+    chatHistory: room.chatHistory,
+  };
+}
 
 function broadcastToRoom(room, message, excludeClientId = null) {
   const json = JSON.stringify(message);
@@ -72,12 +98,10 @@ wss.on('connection', (ws) => {
       switch (type) {
         case MessageTypes.ROOM_LIST_SUBSCRIBE: {
           lobbySubscribers.add(ws);
-          ws.send(
-            JSON.stringify({
-              type: MessageTypes.ROOM_LIST_UPDATE,
-              payload: { rooms: getRoomMetaData() },
-            })
-          );
+          sendJson(ws, {
+            type: MessageTypes.ROOM_LIST_UPDATE,
+            payload: { rooms: getRoomMetaData() },
+          });
           break;
         }
 
@@ -92,29 +116,66 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case MessageTypes.CREATE_ROOM: {
+          const rawRoomName = payload?.roomName ?? payload?.name;
+          const roomName =
+            typeof rawRoomName === 'string' ? rawRoomName.trim() : '';
+          if (!roomName) {
+            sendError(ws, 'Room name must be a non-empty string.');
+            break;
+          }
+          if (roomExists(roomName)) {
+            sendError(ws, `Room "${roomName}" already exists.`);
+            break;
+          }
+
+          const identifiedName = clients.get(clientId)?.name;
+          const providedName = payload?.createdBy || payload?.name;
+          userName = identifiedName || providedName || `User ${clientId}`;
+          clients.set(clientId, { ws, name: userName });
+          currentRoomName = roomName;
+
+          const room = joinRoom(roomName, {
+            id: clientId,
+            name: userName,
+            ws,
+          });
+
+          sendJson(ws, {
+            type: MessageTypes.CREATE_ROOM_SUCCESS,
+            payload: buildRoomStatePayload(room),
+          });
+          broadcastRoomList();
+          break;
+        }
+
         case MessageTypes.JOIN_ROOM: {
           // TODO: Require identification before allowing room joins.
-          const { roomName, name } = payload;
-          currentRoomName = roomName;
+          const rawRoomName = payload?.roomName;
+          const roomName =
+            typeof rawRoomName === 'string' ? rawRoomName.trim() : '';
+          if (!roomName) {
+            sendError(ws, 'Room name must be provided to join.');
+            break;
+          }
+          if (!roomExists(roomName)) {
+            sendError(ws, `Room "${roomName}" does not exist.`);
+            break;
+          }
+
+          const name = payload?.name;
           const identifiedName = clients.get(clientId)?.name;
           userName = identifiedName || name || `User ${clientId}`;
           clients.set(clientId, { ws, name: userName });
+          currentRoomName = roomName;
 
           const room = joinRoom(roomName, { id: clientId, name: userName, ws });
+          const roomStatePayload = buildRoomStatePayload(room);
 
-          ws.send(
-            JSON.stringify({
-              type: MessageTypes.ROOM_LIST_UPDATE,
-              payload: {
-                roomId: room.id,
-                roomName: room.name,
-                participants: Array.from(room.participants.values()).map(
-                  (p) => ({ id: p.id, name: p.name })
-                ),
-                chatHistory: room.chatHistory,
-              },
-            })
-          );
+          sendJson(ws, {
+            type: MessageTypes.JOIN_ROOM_SUCCESS,
+            payload: roomStatePayload,
+          });
 
           broadcastToRoom(
             room,
@@ -130,6 +191,18 @@ wss.on('connection', (ws) => {
             {
               type: 'PARTICIPANT_JOINED',
               payload: { id: clientId, name: userName },
+            },
+            clientId
+          );
+          broadcastToRoom(
+            room,
+            {
+              type: MessageTypes.ROOM_LIST_UPDATE,
+              payload: {
+                roomId: room.id,
+                roomName: room.name,
+                participants: roomStatePayload.participants,
+              },
             },
             clientId
           );

@@ -11,6 +11,7 @@ const RoomPage = () => {
   const [messages, setMessages] = useState([]);
   const [participants, setParticipants] = useState([]);
   const [draft, setDraft] = useState('');
+  const [joinError, setJoinError] = useState('');
 
   const ws = useRef(null);
 
@@ -32,6 +33,14 @@ const RoomPage = () => {
       console.log('RX:', parsed);
 
       switch (parsed.type) {
+        case 'ERROR':
+        case 'JOIN_ROOM_FAILED': {
+          // TODO: Replace with richer error messaging/retry guidance in the tutorial.
+          setJoinError(parsed.payload?.reason || 'Unable to join room.');
+          setTimeout(() => navigate('/'), 1200);
+          break;
+        }
+
         case 'ROOM_LIST_UPDATE':
           if (parsed.payload.participants) {
             setParticipants(parsed.payload.participants);
@@ -98,6 +107,11 @@ const RoomPage = () => {
           <h2 className='section-title' style={{ marginBottom: 4 }}>
             Room: {roomId}
           </h2>
+          {joinError && (
+            <p style={{ color: '#d22', marginTop: 4, fontSize: 13 }}>
+              {joinError} Redirecting to lobby...
+            </p>
+          )}
           <p className='section-subtitle'>
             Video, chat, reactions, and polls will all be wired to live
             WebSocket and WebRTC behavior in the later modules.
