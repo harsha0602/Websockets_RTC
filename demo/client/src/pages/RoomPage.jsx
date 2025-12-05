@@ -12,9 +12,12 @@ const RoomPage = () => {
   const [participants, setParticipants] = useState([]);
   const [draft, setDraft] = useState('');
   const [joinError, setJoinError] = useState('');
+  const [typingIndicator, setTypingIndicator] = useState('');
 
   const ws = useRef(null);
   const hasConnectedRef = useRef(false);
+  const typingTimeoutRef = useRef(null);
+  const lastTypingSentRef = useRef(0);
 
   useEffect(() => {
     // In React 18 StrictMode (dev), effects mount twice; guard so we don't
@@ -77,6 +80,40 @@ const RoomPage = () => {
           setMessages((prev) => [...prev, parsed.payload]);
           break;
 
+        case 'REACTION': {
+          // Ephemeral realtime signal; we surface lightweight feedback, not stored history.
+          const { sender, emoji } = parsed.payload || {};
+          if (sender && emoji) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now(),
+                sender: 'Reaction',
+                text: `${sender} reacted with ${emoji}`,
+              },
+            ]);
+          }
+          break;
+        }
+
+        case 'TYPING': {
+          // Ephemeral realtime signal; should not be persisted.
+          const sender = parsed.payload?.sender;
+          const targetRoom = parsed.payload?.roomName;
+          if (targetRoom && targetRoom !== roomId) break;
+          if (sender && sender !== nickname) {
+            setTypingIndicator(`${sender} is typing...`);
+            if (typingTimeoutRef.current) {
+              clearTimeout(typingTimeoutRef.current);
+            }
+            typingTimeoutRef.current = setTimeout(() => {
+              setTypingIndicator('');
+              typingTimeoutRef.current = null;
+            }, 3000);
+          }
+          break;
+        }
+
         case 'SYSTEM_MESSAGE':
           setMessages((prev) => [
             ...prev,
@@ -100,6 +137,10 @@ const RoomPage = () => {
     };
 
     return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
       if (ws.current) ws.current.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,6 +149,25 @@ const RoomPage = () => {
   const logTodo = (label) => {
     console.log(`TODO: ${label}`);
     alert(`TODO: ${label}`);
+  };
+
+  const sendTyping = () => {
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < 2000) return;
+    lastTypingSentRef.current = now;
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(
+        JSON.stringify({
+          type: 'TYPING',
+          payload: { roomName: roomId, sender: nickname },
+        })
+      );
+    }
+  };
+
+  const handleDraftChange = (e) => {
+    setDraft(e.target.value);
+    sendTyping();
   };
 
   const handleSend = () => {
@@ -121,6 +181,18 @@ const RoomPage = () => {
         })
       );
       setDraft('');
+    }
+  };
+
+  const handleReaction = (emoji) => {
+    if (!emoji) return;
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(
+        JSON.stringify({
+          type: 'REACTION',
+          payload: { roomName: roomId, emoji, sender: nickname },
+        })
+      );
     }
   };
 
@@ -177,7 +249,7 @@ const RoomPage = () => {
               className='input'
               placeholder='Type a message'
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={handleDraftChange}
             />
             <button
               type='button'
@@ -187,6 +259,22 @@ const RoomPage = () => {
               Send
             </button>
           </div>
+
+          {typingIndicator && (
+            <div
+              style={{
+                marginTop: 6,
+                color: '#444',
+                fontSize: 12,
+                background: '#f3f4f6',
+                padding: '6px 10px',
+                borderRadius: 8,
+              }}
+              aria-live='polite'
+            >
+              {typingIndicator}
+            </div>
+          )}
 
           <div className='chat-controls-row'>
             <button
@@ -225,7 +313,7 @@ const RoomPage = () => {
                 key={emoji}
                 type='button'
                 className='btn btn-xs btn-pill'
-                onClick={() => logTodo(`send reaction ${emoji}`)}
+                onClick={() => handleReaction(emoji)}
               >
                 {emoji}
               </button>

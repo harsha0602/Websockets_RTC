@@ -196,3 +196,22 @@ This document captures the build steps for the Realtime Study Rooms demo so we c
 
 ### Checkpoint
 - With two tabs in the same room, when one tab closes or explicitly leaves, the other tab should see that participant disappear from the list almost immediately.
+
+## Feature 7: Reactions and typing indicators
+
+### Goal
+- Add lightweight realtime signals on top of chat, so participants can send emoji reactions and see who is currently typing.
+
+### Files you will edit
+- demo/server/src/index.js
+- demo/client/src/pages/RoomPage.jsx
+
+### Steps
+1. From the client, send a `REACTION` message when an emoji button is clicked, including `roomName`, the emoji string, and the sender name.
+2. On the server, broadcast `REACTION` events to all participants in that room.
+3. On the client, show brief visual feedback when a `REACTION` event arrives, such as a small floating emoji or a lightweight "X reacted with 🎉" entry.
+4. Send `TYPING` messages from the client when the user types in the chat input, with basic throttling so these aren't spammy.
+5. Show a "X is typing..." label when `TYPING` events are received, and hide it after a short timeout.
+
+### Checkpoint
+- With two tabs in the same room, clicking a reaction in one tab should trigger visible feedback in the other tab, and typing in one tab should show a "X is typing..." message in the other.

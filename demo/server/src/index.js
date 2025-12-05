@@ -305,6 +305,94 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case MessageTypes.REACTION: {
+          const incomingRoom =
+            typeof payload?.roomName === 'string'
+              ? payload.roomName.trim()
+              : currentRoomName;
+          const roomName = typeof incomingRoom === 'string' ? incomingRoom : '';
+          const emoji =
+            typeof payload?.emoji === 'string' ? payload.emoji.trim() : '';
+
+          if (!roomName) {
+            sendError(ws, 'Reaction messages must include a roomName.');
+            break;
+          }
+          if (!emoji) {
+            sendError(ws, 'Reaction messages must include an emoji.');
+            break;
+          }
+          if (!roomExists(roomName)) {
+            sendError(ws, `Room "${roomName}" does not exist.`);
+            break;
+          }
+
+          const room = getOrCreateRoom(roomName);
+          const participant = room.participants.get(String(clientId));
+          if (!participant) {
+            sendError(ws, `You are not a member of room "${roomName}".`);
+            break;
+          }
+
+          const senderName =
+            participant.name ||
+            clients.get(clientId)?.name ||
+            payload?.sender ||
+            `User ${clientId}`;
+
+          broadcastToRoom(room, {
+            type: MessageTypes.REACTION,
+            payload: {
+              roomName,
+              emoji,
+              sender: senderName,
+              timestamp: new Date().toISOString(),
+            },
+          });
+          break;
+        }
+
+        case MessageTypes.TYPING: {
+          const incomingRoom =
+            typeof payload?.roomName === 'string'
+              ? payload.roomName.trim()
+              : currentRoomName;
+          const roomName = typeof incomingRoom === 'string' ? incomingRoom : '';
+
+          if (!roomName) {
+            sendError(ws, 'Typing messages must include a roomName.');
+            break;
+          }
+          if (!roomExists(roomName)) {
+            sendError(ws, `Room "${roomName}" does not exist.`);
+            break;
+          }
+
+          const room = getOrCreateRoom(roomName);
+          const participant = room.participants.get(String(clientId));
+          if (!participant) {
+            sendError(ws, `You are not a member of room "${roomName}".`);
+            break;
+          }
+
+          const senderName =
+            participant.name ||
+            clients.get(clientId)?.name ||
+            payload?.sender ||
+            `User ${clientId}`;
+
+          // Clients should avoid spamming typing events; consider throttling on the sender.
+          broadcastToRoom(
+            room,
+            {
+              type: MessageTypes.TYPING,
+              payload: { roomName, sender: senderName },
+            },
+            clientId
+          );
+          break;
+        }
+
         default:
           console.warn('Unknown message type:', type);
       }
