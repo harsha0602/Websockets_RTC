@@ -151,6 +151,52 @@ pre {
 
 .nav-btn.next { background-color: #04AA6D; color: white; }
 
+.step-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.step-card {
+    border: 1px solid #e2e6ea;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.step-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.step-card h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #1f2a33;
+}
+
+.step-card p {
+    margin: 6px 0 0 0;
+    color: #444;
+    line-height: 1.5;
+}
+
+.step-badge {
+    background-color: #e7f6ee;
+    color: #0f5132;
+    border: 1px solid #cfe8da;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
 /* --- Module 2 Specific Styles --- */
 
 /* Promise diagram styling */
