@@ -173,6 +173,18 @@ export const useWebRTC = (roomId, sendMessage) => {
     setRemoteStreams((prev) => prev.filter((p) => p.id !== userId));
   }, []);
 
+  const leaveCall = useCallback(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+    }
+    setLocalStream(null);
+
+    Object.values(peersRef.current).forEach((peer) => peer.close());
+    peersRef.current = {};
+    setRemoteStreams([]);
+  }, []);
+
   return {
     localStream,
     remoteStreams,
@@ -184,5 +196,6 @@ export const useWebRTC = (roomId, sendMessage) => {
     handleWebRTCSignal,
     connectToNewUser,
     removePeer,
+    leaveCall,
   };
 };

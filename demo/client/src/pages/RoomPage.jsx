@@ -39,6 +39,7 @@ const RoomPage = () => {
     handleWebRTCSignal,
     connectToNewUser,
     removePeer,
+    leaveCall,
   } = useWebRTC(roomId, sendWsMessage);
 
   useEffect(() => {
@@ -231,7 +232,10 @@ const RoomPage = () => {
     }
   };
 
-  remoteStreams.forEach((p) => console.log('remote:', p));
+  const handleExit = () => {
+    leaveCall();
+    navigate('/');
+  };
 
   return (
     <div className='room-layout'>
@@ -262,33 +266,6 @@ const RoomPage = () => {
                   Loading Camera...
                 </div>
               )}
-
-              <div
-                className='controls-overlay'
-                style={{
-                  position: 'absolute',
-                  bottom: 10,
-                  left: 10,
-                  zIndex: 10,
-                }}
-              >
-                <button
-                  onClick={toggleVideo}
-                  className={`btn btn-xs btn-pill ${
-                    isVideoEnabled ? 'btn-primary' : 'btn-ghost'
-                  }`}
-                >
-                  {isVideoEnabled ? 'Camera ON' : 'Camera OFF'}
-                </button>
-                <button
-                  onClick={toggleAudio}
-                  className={`btn btn-xs btn-pill ${
-                    isAudioEnabled ? 'btn-primary' : 'btn-ghost'
-                  }`}
-                >
-                  {isAudioEnabled ? 'Mic ON' : 'Mic OFF'}
-                </button>
-              </div>
             </div>
 
             {remoteStreams.map((peer) => {
@@ -309,6 +286,37 @@ const RoomPage = () => {
                 </div>
               );
             })}
+          </div>
+          <div className='chat-controls-row'>
+            <button
+              type='button'
+              className={`btn btn-pill ${
+                !isAudioEnabled ? 'btn-danger' : 'btn-ghost'
+              }`}
+              onClick={toggleAudio}
+              disabled={!localStream}
+            >
+              {isAudioEnabled ? 'Mute' : 'Unmute'}
+            </button>
+
+            <button
+              type='button'
+              className={`btn btn-pill ${
+                !isVideoEnabled ? 'btn-danger' : 'btn-ghost'
+              }`}
+              onClick={toggleVideo}
+              disabled={!localStream}
+            >
+              {isVideoEnabled ? 'Stop Video' : 'Start Video'}
+            </button>
+            <button
+              type='button'
+              className='btn btn-ghost btn-pill'
+              onClick={handleExit}
+              style={{ color: '#d33', borderColor: '#d33' }}
+            >
+              Leave call
+            </button>
           </div>
         </div>
 
@@ -361,37 +369,6 @@ const RoomPage = () => {
             </div>
           )}
 
-          <div className='chat-controls-row'>
-            <button
-              type='button'
-              className='btn btn-pill'
-              onClick={() => logTodo('join WebRTC call')}
-            >
-              Join call
-            </button>
-            <button
-              type='button'
-              className='btn btn-ghost btn-pill'
-              onClick={() => logTodo('leave WebRTC call')}
-            >
-              Leave call
-            </button>
-            <button
-              type='button'
-              className='btn btn-ghost btn-pill'
-              onClick={() => logTodo('mute microphone')}
-            >
-              Mute
-            </button>
-            <button
-              type='button'
-              className='btn btn-ghost btn-pill'
-              onClick={() => logTodo('toggle camera')}
-            >
-              Toggle camera
-            </button>
-          </div>
-
           <div className='reaction-row'>
             {['👍', '❤️', '😂', '🎉'].map((emoji) => (
               <button
@@ -403,13 +380,6 @@ const RoomPage = () => {
                 {emoji}
               </button>
             ))}
-            <button
-              type='button'
-              className='btn btn-xs btn-pill btn-ghost'
-              onClick={() => logTodo('start poll')}
-            >
-              Start poll
-            </button>
           </div>
         </div>
       </div>
