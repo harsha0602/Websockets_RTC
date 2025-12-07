@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useWebRTC } from '../ws/useWebRTC';
+import VideoPlayer from '../components/VideoPlayer';
 
 const RoomPage = () => {
   const { roomId } = useParams();
@@ -13,18 +15,43 @@ const RoomPage = () => {
   const [draft, setDraft] = useState('');
   const [joinError, setJoinError] = useState('');
   const [typingIndicator, setTypingIndicator] = useState('');
+  const [isReadyToJoin, setIsReadyToJoin] = useState(false);
 
   const ws = useRef(null);
   const hasConnectedRef = useRef(false);
   const typingTimeoutRef = useRef(null);
   const lastTypingSentRef = useRef(0);
 
+  const sendWsMessage = useCallback((type, payload) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ type, payload }));
+    }
+  }, []);
+
+  const {
+    localStream,
+    remoteStreams,
+    isVideoEnabled,
+    isAudioEnabled,
+    initializeMedia,
+    toggleVideo,
+    toggleAudio,
+    handleWebRTCSignal,
+    connectToNewUser,
+    removePeer,
+  } = useWebRTC(roomId, sendWsMessage);
+
   useEffect(() => {
-    // In React 18 StrictMode (dev), effects mount twice; guard so we don't
-    // create/close two sockets and emit duplicate join/leave events.
-    // Testing tip: open two tabs, join the same room, and confirm chat stays in sync across both.
-    if (hasConnectedRef.current) return;
-    hasConnectedRef.current = true;
+    const startCamera = async () => {
+      await initializeMedia();
+      setIsReadyToJoin(true);
+    };
+    startCamera();
+  }, [initializeMedia]);
+
+  useEffect(() => {
+    if (!isReadyToJoin) return;
+    console.log('MAIN');
 
     ws.current = new WebSocket('ws://localhost:3001');
 
@@ -40,7 +67,13 @@ const RoomPage = () => {
 
     ws.current.onmessage = (event) => {
       const parsed = JSON.parse(event.data);
+      const { type, payload } = parsed;
       console.log('RX:', parsed);
+
+      if (parsed.type.startsWith('WEBRTC_')) {
+        handleWebRTCSignal(type, payload);
+        return;
+      }
 
       switch (parsed.type) {
         case 'ERROR':
@@ -123,12 +156,14 @@ const RoomPage = () => {
 
         case 'PARTICIPANT_JOINED':
           setParticipants((prev) => [...prev, parsed.payload]);
+          connectToNewUser(parsed.payload.id);
           break;
 
         case 'PARTICIPANT_LEFT':
           setParticipants((prev) =>
             prev.filter((p) => p.id !== parsed.payload.id)
           );
+          removePeer(payload.id);
           break;
 
         default:
@@ -144,7 +179,7 @@ const RoomPage = () => {
       if (ws.current) ws.current.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, nickname]);
+  }, [roomId, nickname, isReadyToJoin]);
 
   const logTodo = (label) => {
     console.log(`TODO: ${label}`);
@@ -215,13 +250,48 @@ const RoomPage = () => {
         </div>
 
         <div className='card' style={{ padding: 16 }}>
-          <h3 className='section-title' style={{ marginBottom: 10 }}>
-            Video area
-          </h3>
+          <h3 className='section-title'>Video Area</h3>
           <div className='video-grid'>
-            {[1, 2, 3, 4].map((n) => (
-              <div key={n} className='video-tile'>
-                Video tile placeholder
+            <div className='video-tile'>
+              {localStream ? (
+                <VideoPlayer stream={localStream} isLocal={true} />
+              ) : (
+                <div className='black-screen-placeholder'>
+                  Loading Camera...
+                </div>
+              )}
+
+              <div
+                className='controls-overlay'
+                style={{
+                  position: 'absolute',
+                  bottom: 10,
+                  left: 10,
+                  zIndex: 10,
+                }}
+              >
+                <button
+                  onClick={toggleVideo}
+                  className={`btn btn-xs btn-pill ${
+                    isVideoEnabled ? 'btn-primary' : 'btn-ghost'
+                  }`}
+                >
+                  {isVideoEnabled ? 'Camera ON' : 'Camera OFF'}
+                </button>
+                <button
+                  onClick={toggleAudio}
+                  className={`btn btn-xs btn-pill ${
+                    isAudioEnabled ? 'btn-primary' : 'btn-ghost'
+                  }`}
+                >
+                  {isAudioEnabled ? 'Mic ON' : 'Mic OFF'}
+                </button>
+              </div>
+            </div>
+
+            {remoteStreams.map((peer) => (
+              <div key={peer.id} className='video-tile'>
+                <VideoPlayer stream={peer.stream} isLocal={false} />
               </div>
             ))}
           </div>

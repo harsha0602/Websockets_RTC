@@ -393,6 +393,53 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        // WEBRTC SIGNALING LOGIC
+        case MessageTypes.WEBRTC_OFFER:
+        case MessageTypes.WEBRTC_ANSWER:
+        case MessageTypes.WEBRTC_ICE_CANDIDATE: {
+          console.log(
+            `[Signal] ${type} from ${clientId} to target: ${payload.targetId}`
+          );
+
+          if (!currentRoomName) return;
+          const room = getOrCreateRoom(currentRoomName);
+
+          if (payload.targetId) {
+            let target = room.participants.get(payload.targetId);
+
+            if (!target) {
+              target = room.participants.get(Number(payload.targetId));
+            }
+
+            if (!target) {
+              target = room.participants.get(String(payload.targetId));
+            }
+
+            if (target && target.ws.readyState === WebSocket.OPEN) {
+              target.ws.send(
+                JSON.stringify({
+                  type: type,
+                  payload: { ...payload, senderId: clientId },
+                })
+              );
+            } else {
+              console.warn(
+                `Target user ${payload.targetId} not found or disconnected.`
+              );
+            }
+          } else {
+            broadcastToRoom(
+              room,
+              {
+                type: type,
+                payload: { ...payload, senderId: clientId },
+              },
+              clientId
+            );
+          }
+          break;
+        }
+
         default:
           console.warn('Unknown message type:', type);
       }
