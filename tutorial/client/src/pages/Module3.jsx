@@ -137,6 +137,30 @@ function Module3() {
       summary: 'Layer lightweight realtime signals—emoji reactions and typing presence—on top of the chat experience.',
       meta: 'Est. 45-75 min',
     },
+    {
+      title: 'Step 8: WebRTC signaling overview (Feature 8)',
+      summary: 'Design the signaling protocol and message types (offer, answer, ICE) that ride on the existing WebSocket channel.',
+      meta: 'Est. 20-30 min',
+      anchor: 'step-8',
+    },
+    {
+      title: 'Step 9: Join call and show local video (Feature 9)',
+      summary: 'Request camera/mic permission, create a PeerConnection, and render your own mirrored video tile.',
+      meta: 'Est. 45-75 min',
+      anchor: 'step-9',
+    },
+    {
+      title: 'Step 10: Remote peers and video tiles (Feature 10)',
+      summary: 'Connect participants in the same room, manage remote streams, and fill the remaining video tiles with names.',
+      meta: 'Est. 60-90 min',
+      anchor: 'step-10',
+    },
+    {
+      title: 'Step 11: Media controls and cleanup (Feature 11)',
+      summary: 'Hook up Mute / Toggle camera / Leave call and cleanly tear down peers and tracks when exiting.',
+      meta: 'Est. 45-60 min',
+      anchor: 'step-11',
+    },
   ];
 
   const stepDetails = [
@@ -348,6 +372,116 @@ function Module3() {
         'Reactions are ephemeral; you do not need to store them in chatHistory unless you want a permanent record.',
       ],
     },
+    {
+      id: 'step-8',
+      stepLabel: 'Step 8',
+      title: 'WebRTC signaling overview',
+      goal: 'Understand how WebRTC offer/answer/ICE messages ride on the existing WebSocket connection and which side sends each.',
+      files: [
+        'tutorial/demo-notes.md',
+        'demo/server/src/messages.js',
+        'demo/server/src/index.js',
+        'demo/client/src/ws/useWebSocketClient.js',
+        'demo/client/src/ws/useWebRTC.js',
+        'demo/client/src/pages/RoomPage.jsx',
+      ],
+      steps: [
+        'Add WEBRTC_OFFER, WEBRTC_ANSWER, and WEBRTC_ICE_CANDIDATE types to the shared messages enum used by server and client.',
+        'Decide who sends which payload: the caller emits offers, the callee replies with answers, and both sides send ICE candidates as they appear.',
+        'On the server, forward WEBRTC_* messages to the intended peer(s) in the same room via the existing WebSocket without parsing SDP or ICE.',
+        'In the client socket handler, intercept WEBRTC_* events and pass them to useWebRTC; when a participant joins, emit offers to the newcomer.',
+      ],
+      checkpoint: 'You can sketch the signaling flow for a user joining: which WEBRTC_* messages move over WebSockets, who originates them, and how the server forwards them.',
+      quickCheck: [
+        'Which message types carry WebRTC signaling in this app?',
+        'Who sends offers vs. answers when a new participant joins?',
+      ],
+      hints: [
+        'Reuse the same sendJsonMessage helper for WEBRTC_* types; no new transport is needed.',
+        'The server should only tag senderId and forward the payload; it should not interpret SDP.',
+      ],
+    },
+    {
+      id: 'step-9',
+      stepLabel: 'Step 9',
+      title: 'Join call and show local video',
+      goal: 'Request camera/mic access, create a PeerConnection, and render your own video in the first tile once you join a call.',
+      files: [
+        'demo/client/src/ws/useWebRTC.js',
+        'demo/client/src/components/VideoPlayer.jsx',
+        'demo/client/src/pages/RoomPage.jsx',
+      ],
+      steps: [
+        'Call navigator.mediaDevices.getUserMedia for audio/video in useWebRTC, storing the local stream in state/refs and attaching tracks to new PeerConnections.',
+        'Expose helpers like initialize/join, toggleAudio, toggleVideo, handleWebRTCSignal, connectToNewUser, removePeer, and leaveCall along with local/remote stream state.',
+        'After joining the room over WebSocket, wire incoming WEBRTC_* messages to handleWebRTCSignal and start offers to newcomers via connectToNewUser.',
+        'Render the first video tile with the local stream using VideoPlayer, mirroring the feed for the local user and labeling it with their name.',
+        'Handle permission errors gracefully (log and briefly surface a message) so the UI can redirect or disable controls if media access is denied.',
+      ],
+      checkpoint: 'Clicking Join call starts the camera and shows your own video in the first tile; leaving the room removes your tile and stops local tracks.',
+      quickCheck: [
+        'Do the Mute/Video controls stay disabled until local media is available?',
+        'After clicking Join call, do you see a mirrored local video tile?',
+      ],
+      hints: [
+        'Set video transform: scaleX(-1) for the local feed to mirror it.',
+        'Only add tracks to PeerConnections after getUserMedia resolves successfully.',
+      ],
+    },
+    {
+      id: 'step-10',
+      stepLabel: 'Step 10',
+      title: 'Remote peers and video tiles',
+      goal: 'Connect multiple participants in the same room, receive their media tracks, and render remote tiles with names.',
+      files: [
+        'demo/server/src/index.js',
+        'demo/client/src/ws/useWebRTC.js',
+        'demo/client/src/components/VideoPlayer.jsx',
+        'demo/client/src/pages/RoomPage.jsx',
+      ],
+      steps: [
+        'Create and manage one RTCPeerConnection per participant in useWebRTC, wiring onicecandidate to send WEBRTC_ICE_CANDIDATE over WebSockets and ontrack to capture incoming streams.',
+        'When a participant joins, existing peers send WEBRTC_OFFER and receivers reply with WEBRTC_ANSWER, adding or queuing ICE candidates until negotiation completes.',
+        'Store remote MediaStreams along with the sender/participant id so you can render them consistently.',
+        'In RoomPage, render one VideoPlayer per remote stream and match stream ids to participant records to show the correct display name.',
+        'On leave or disconnect, close the relevant PeerConnection, drop its stream from state, and remove the tile.',
+      ],
+      checkpoint: 'With two tabs in the same room, both tabs show their own video plus the other user’s video; when one tab leaves, the other removes the remote tile.',
+      quickCheck: [
+        'Do you see the other tab’s video after both click Join call?',
+        'Does the remote tile disappear when the other tab closes or leaves?',
+      ],
+      hints: [
+        'Use the participant id from signaling payloads to key PeerConnections and remote streams.',
+        'Close RTCPeerConnection instances immediately when a participant leaves to free resources.',
+      ],
+    },
+    {
+      id: 'step-11',
+      stepLabel: 'Step 11',
+      title: 'Media controls and leaving the call cleanly',
+      goal: 'Wire mute/toggle camera controls and tear down WebRTC state cleanly when leaving a call.',
+      files: [
+        'demo/client/src/ws/useWebRTC.js',
+        'demo/client/src/pages/RoomPage.jsx',
+      ],
+      steps: [
+        'Implement toggleAudio and toggleVideo in useWebRTC to enable/disable the matching tracks on the local stream and expose booleans for UI state.',
+        'Connect RoomPage controls to these handlers, updating labels/styles based on isAudioEnabled and isVideoEnabled and disabling them until a local stream exists.',
+        'Add a leaveCall helper that stops all local tracks, closes every RTCPeerConnection, clears refs, and resets local/remote stream state.',
+        'Call leaveCall when the user clicks Leave call and in the RoomPage cleanup effect to avoid orphaned peers or active camera/mic.',
+        'Optionally emit a lightweight leave signal so remote peers can drop the departing participant’s tile promptly.',
+      ],
+      checkpoint: 'You can mute/unmute and toggle the camera mid-call, and leaving reliably clears all tiles and releases camera/mic access in both tabs.',
+      quickCheck: [
+        'Do the mute/video buttons reflect the current track state?',
+        'After leaving the room, is the camera light off and are remote tiles removed?',
+      ],
+      hints: [
+        'Toggle the track.enabled flag instead of removing tracks to keep negotiation simple.',
+        'Run leaveCall from useEffect cleanup to cover navigation away or tab closes.',
+      ],
+    },
   ];
 
   const handleCardClick = (anchor) => {
@@ -370,8 +504,8 @@ function Module3() {
 
       <main className="main-content">
         <h1>Module 3: Building the Realtime Study Rooms demo</h1>
-        <p>This is the hands-on module where you will build the Realtime Study Rooms demo using WebSockets to power lobby updates, room presence, and chat. WebRTC will enter in a later module—here we focus on socket-driven collaboration features.</p>
-        <p>By the end of these steps, you will have a working lobby and room experience that stays synchronized across tabs, with clear patterns you can reuse in your own projects.</p>
+        <p>This is the hands-on module where you will build the Realtime Study Rooms demo: start with WebSockets for lobby updates, presence, and chat, then layer WebRTC on the same signaling channel to add video inside each room.</p>
+        <p>By the end of these steps, you will have a synchronized lobby and room experience plus a basic video call with media controls that you can reuse in your own projects.</p>
 
         <section>
           <h2>Learning Outcomes</h2>
@@ -382,6 +516,10 @@ function Module3() {
             <li>Render a live lobby list and implement validated create/join flows with server feedback (Features 3–4).</li>
             <li>Build a synchronized room chat timeline and accurate participants list (Features 5–6).</li>
             <li>Add reactions and typing indicators to layer lightweight realtime signals onto chat (Feature 7).</li>
+            <li>Understand WebRTC signaling messages and how they ride on the WebSocket transport (Feature 8).</li>
+            <li>Join a call and render your local camera feed in the first video tile (Feature 9).</li>
+            <li>Establish peer connections so remote participants appear as additional video tiles (Feature 10).</li>
+            <li>Wire Mute / Toggle camera / Leave call buttons to real media controls and teardown logic (Feature 11).</li>
           </ul>
         </section>
 
@@ -393,13 +531,15 @@ function Module3() {
               <li>Completed Module 1 (fundamentals) and Module 2 (analysis).</li>
               <li>Node.js and npm installed locally.</li>
               <li>The starter UI running from Feature 0 so you can iterate quickly.</li>
+              <li>A working lobby, chat, and presence flow from Steps 0-7 before adding video.</li>
+              <li>A machine with camera/microphone access and permission to use them in the browser.</li>
             </ul>
           </div>
         </section>
 
         <section>
           <h2>Build steps overview</h2>
-          <p>Follow these steps to evolve the starter lobby into a fully synchronized study room experience.</p>
+          <p>Follow these steps to evolve the starter lobby into a synchronized study room experience and then layer in WebRTC video.</p>
           <div className="step-grid">
             {steps.map((step) => (
               <div
