@@ -1,3 +1,6 @@
+// Starter version of Module 3 rooms helpers: logic is stubbed for learners to implement.
+// Full behavior (lobby summaries, room join/create, chat history, participant tracking)
+// exists on the dev branch; follow Module 3 steps to fill in the TODOs below.
 const { v4: uuidv4 } = require('uuid');
 const rooms = new Map();
 
@@ -6,11 +9,15 @@ const rooms = new Map();
  * { id, name, ws } where ws is the WebSocket connection instance.
  */
 function createParticipant(id, name, ws) {
-  return { id, name, ws };
+  // TODO [Module 3 - Step 4]: Create and return a participant record storing id, name, and ws.
+  throw new Error('TODO: implement createParticipant as described in Module 3');
 }
 
 function getParticipantDisplayInfo(participant) {
-  return { id: participant.id, name: participant.name };
+  // TODO [Module 3 - Step 6]: Return a display-safe subset (id, name) for a participant.
+  throw new Error(
+    'TODO: implement getParticipantDisplayInfo as described in Module 3'
+  );
 }
 
 class Room {
@@ -25,101 +32,57 @@ class Room {
 }
 
 function getRoomMetaData() {
-  const summaries = [];
-  for (const [id, room] of rooms.entries()) {
-    summaries.push({
-      id: room.id,
-      name: room.name,
-      participants: room.participants.size,
-    });
-  }
-  return summaries;
+  // TODO [Module 3 - Step 3]: Return lobby-friendly metadata for all rooms (id, name, participant count).
+  throw new Error('TODO: implement getRoomMetaData as described in Module 3');
 }
 
 function getRoomSummaries() {
-  const summaries = [];
-  for (const [, room] of rooms.entries()) {
-    // Skip empty rooms so the lobby focuses on active rooms, even though we keep
-    // empty ones in memory to support navigation handoffs between tabs.
-    if (room.participants.size === 0) continue;
-    summaries.push({
-      name: room.name,
-      participantCount: room.participants.size,
-    });
-  }
-  return summaries;
+  // TODO [Module 3 - Step 3]: Return summaries of active rooms for the lobby list.
+  throw new Error('TODO: implement getRoomSummaries as described in Module 3');
 }
 
 function roomExists(name) {
-  return rooms.has(name);
+  // TODO [Module 3 - Step 4]: Check if a room already exists by name.
+  throw new Error('TODO: implement roomExists as described in Module 3');
 }
 
 function getOrCreateRoom(name) {
-  if (rooms.has(name)) {
-    return rooms.get(name);
-  }
-  const newRoom = new Room(uuidv4(), name);
-  rooms.set(name, newRoom);
-  return newRoom;
+  // TODO [Module 3 - Step 4]: Retrieve an existing room by name or create a new one with a generated id.
+  throw new Error('TODO: implement getOrCreateRoom as described in Module 3');
 }
 
 function addParticipant(room, participant) {
-  const participantRecord = createParticipant(
-    participant.id,
-    participant.name,
-    participant.ws
-  );
-  const participantKey = String(participantRecord.id);
-  room.participants.set(participantKey, participantRecord);
-  return participantRecord;
+  // TODO [Module 3 - Step 4]: Add a participant to the room's participants map.
+  throw new Error('TODO: implement addParticipant as described in Module 3');
 }
 
 function removeParticipant(room, participantId) {
-  const participantKey = String(participantId);
-  const existing = room.participants.get(participantKey);
-  if (!existing) return null;
-  room.participants.delete(participantKey);
-  return existing;
+  // TODO [Module 3 - Step 6]: Remove and return a participant from the room by id, or null if missing.
+  throw new Error('TODO: implement removeParticipant as described in Module 3');
 }
 
 function getParticipantSummaries(room) {
-  return Array.from(room.participants.values()).map(getParticipantDisplayInfo);
+  // TODO [Module 3 - Step 6]: Return display info for all participants in the room.
+  throw new Error(
+    'TODO: implement getParticipantSummaries as described in Module 3'
+  );
 }
 
 function joinRoom(roomName, participant) {
-  const room = getOrCreateRoom(roomName);
-  addParticipant(room, participant);
-  return room;
+  // TODO [Module 3 - Step 4]: Look up or create a room, add the participant, and return the room.
+  throw new Error('TODO: implement joinRoom as described in Module 3');
 }
 
 function removeParticipantFromAllRooms(participantId) {
-  const participantRemovedFromRooms = [];
-
-  for (const [roomName, room] of rooms.entries()) {
-    const removed = removeParticipant(room, participantId);
-    if (removed) {
-      participantRemovedFromRooms.push(room);
-    }
-  }
-  return participantRemovedFromRooms;
+  // TODO [Module 3 - Step 6]: Remove a participant from every room and return the list of rooms affected.
+  throw new Error(
+    'TODO: implement removeParticipantFromAllRooms as described in Module 3'
+  );
 }
 
 function addChatMessage(room, messageData) {
-  const chatEntry = {
-    id: uuidv4(),
-    roomName: messageData.roomName || room.name,
-    senderId: messageData.senderId,
-    sender: messageData.sender,
-    text: messageData.text,
-    timestamp: new Date().toISOString(),
-  };
-
-  // Keep last 50 messages
-  room.chatHistory.push(chatEntry);
-  if (room.chatHistory.length > 50) {
-    room.chatHistory.shift();
-  }
-  return chatEntry;
+  // TODO [Module 3 - Step 5]: Append a chat message to the room history and return the stored entry.
+  throw new Error('TODO: implement addChatMessage as described in Module 3');
 }
 
 module.exports = {

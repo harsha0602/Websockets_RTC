@@ -4,8 +4,11 @@ const VideoPlayer = ({ stream, isLocal, username }) => {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
+    // TODO: will show real video once WebRTC is implemented in Module 3.
+    if (videoRef.current && stream instanceof MediaStream) {
       videoRef.current.srcObject = stream;
+    } else if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
   }, [stream]);
 
@@ -32,6 +35,30 @@ const VideoPlayer = ({ stream, isLocal, username }) => {
           transform: isLocal ? 'scaleX(-1)' : 'none',
         }}
       />
+      {!stream && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            background: 'rgba(0, 0, 0, 0.6)',
+            textAlign: 'center',
+            padding: '12px',
+            boxSizing: 'border-box',
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600 }}>{username || (isLocal ? 'You' : 'User')}</div>
+            <div style={{ fontSize: '12px', opacity: 0.8 }}>Waiting for stream</div>
+          </div>
+        </div>
+      )}
       <div
         style={{
           position: 'absolute',

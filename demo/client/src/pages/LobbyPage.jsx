@@ -1,10 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// Starter version: lobby WebSocket wiring is stubbed.
+// TODO [Module 3 - Step 3]: subscribe to ROOM_LIST_UPDATE for live lobby data.
+// TODO [Module 3 - Step 4]: send CREATE_ROOM / JOIN_ROOM over WebSocket.
+
 const LobbyPage = () => {
   const [nickname, setNickname] = useState('');
   const [nicknameError, setNicknameError] = useState('');
-  const [rooms, setRooms] = useState([]);
+  const [rooms, setRooms] = useState([
+    { id: 'demo-1', name: 'Sample Room A', participantCount: 2 },
+    { id: 'demo-2', name: 'Sample Room B', participantCount: 1 },
+  ]);
   const [selectedRoomName, setSelectedRoomName] = useState(null);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -16,39 +23,9 @@ const LobbyPage = () => {
   }, [nickname]);
 
   useEffect(() => {
-    // Tip: open two tabs; both subscribe here and will receive live ROOM_LIST_UPDATE pushes as rooms change.
-    ws.current = new WebSocket('ws://localhost:3001');
-
-    ws.current.onopen = () => {
-      console.log('Lobby connected to server');
-      // TODO: Send IDENTIFY with nickname once collected so the server knows this user.
-      ws.current.send(JSON.stringify({ type: 'ROOM_LIST_SUBSCRIBE' }));
-    };
-
-    ws.current.onmessage = (event) => {
-      try {
-        const { type, payload } = JSON.parse(event.data);
-        if (type === 'ROOM_LIST_UPDATE' && payload.rooms) {
-          setRooms(payload.rooms);
-        } else if (type === 'ERROR') {
-          setError(payload?.reason || 'Something went wrong.');
-        } else if (type === 'CREATE_ROOM_SUCCESS') {
-          setError('');
-          const roomName = payload?.roomName;
-          if (roomName) {
-            navigate(`/room/${roomName}`, {
-              state: { nickname: nicknameRef.current },
-            });
-          }
-        }
-      } catch (err) {
-        console.error('Lobby WS Error:', err);
-      }
-    };
-
-    return () => {
-      if (ws.current) ws.current.close();
-    };
+    // TODO [Module 3 - Step 3]: open WebSocket connection and subscribe to ROOM_LIST_UPDATE.
+    // For starter, no network calls are made.
+    ws.current = null;
   }, []);
 
   const handleCreateRoom = () => {
@@ -60,16 +37,11 @@ const LobbyPage = () => {
     const newRoomName = prompt('Enter new room name:');
     if (newRoomName) {
       setError('');
-      if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-        setError('Connecting to server. Please try again in a moment.');
-        return;
-      }
-      ws.current.send(
-        JSON.stringify({
-          type: 'CREATE_ROOM',
-          payload: { roomName: newRoomName, createdBy: nickname },
-        })
+      console.warn(
+        'TODO: implement CREATE_ROOM via WebSocket (Module 3 - Step 4).',
+        { roomName: newRoomName, nickname }
       );
+      // TODO: send CREATE_ROOM over WebSocket and navigate on success.
     }
   };
 
@@ -84,6 +56,11 @@ const LobbyPage = () => {
     }
     setNicknameError('');
     setError('');
+    console.warn(
+      'TODO: implement JOIN_ROOM via WebSocket (Module 3 - Step 4).',
+      { roomName: selectedRoomName, nickname }
+    );
+    // TODO: send JOIN_ROOM over WebSocket, then navigate on success.
     navigate(`/room/${selectedRoomName}`, { state: { nickname } });
   };
 
@@ -126,7 +103,7 @@ const LobbyPage = () => {
         <h2 className='section-title'>Available rooms</h2>
         <p className='section-subtitle'>
           {rooms.length === 0
-            ? 'No active rooms. Create one to get started!'
+            ? 'No active rooms. Create one to get started! (Live list arrives in Module 3 - Step 3.)'
             : 'Join an active conversation below.'}
         </p>
 

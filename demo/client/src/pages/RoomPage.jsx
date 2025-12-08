@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useWebRTC } from '../ws/useWebRTC';
 import VideoPlayer from '../components/VideoPlayer';
@@ -10,22 +10,35 @@ const RoomPage = () => {
 
   const nickname = location.state?.nickname || 'Anonymous';
 
-  const [messages, setMessages] = useState([]);
-  const [participants, setParticipants] = useState([]);
+  // Starter placeholders; real data will arrive from WebSocket in Module 3 Steps 4-7.
+  // TODO [Module 3 - Step 5]: Replace placeholder chat messages with server history.
+  const [messages, setMessages] = useState([
+    {
+      id: 'starter-1',
+      sender: 'System',
+      text: 'Welcome to the starter room.',
+    },
+    {
+      id: 'starter-2',
+      sender: 'Guide',
+      text: 'Chat goes live in Module 3 - Step 5.',
+    },
+  ]);
+  // TODO [Module 3 - Step 6]: Replace placeholder participants with live roster updates.
+  const [participants, setParticipants] = useState(() => [
+    { id: 'you', name: nickname || 'You' },
+    { id: 'peer', name: 'Remote peer' },
+  ]);
   const [draft, setDraft] = useState('');
-  const [joinError, setJoinError] = useState('');
-  const [typingIndicator, setTypingIndicator] = useState('');
-  const [isReadyToJoin, setIsReadyToJoin] = useState(false);
-
-  const ws = useRef(null);
-  const hasConnectedRef = useRef(false);
-  const typingTimeoutRef = useRef(null);
-  const lastTypingSentRef = useRef(0);
+  const [joinError] = useState('');
+  const [typingIndicator] = useState('');
 
   const sendWsMessage = useCallback((type, payload) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({ type, payload }));
-    }
+    console.warn(
+      'TODO: send WebSocket message (Module 3 - Steps 4-7).',
+      type,
+      payload
+    );
   }, []);
 
   const {
@@ -33,172 +46,40 @@ const RoomPage = () => {
     remoteStreams,
     isVideoEnabled,
     isAudioEnabled,
-    initializeMedia,
-    toggleVideo,
-    toggleAudio,
+    joinCall,
+    toggleMute,
+    toggleCamera,
     handleWebRTCSignal,
     connectToNewUser,
     removePeer,
     leaveCall,
   } = useWebRTC(roomId, sendWsMessage);
 
-  useEffect(() => {
-    const startCamera = async () => {
-      await initializeMedia();
-      setIsReadyToJoin(true);
-    };
-    startCamera();
-  }, [initializeMedia]);
+  const displayRemoteStreams =
+    remoteStreams && remoteStreams.length > 0
+      ? remoteStreams
+      : [{ id: 'demo-remote', stream: null }];
 
   useEffect(() => {
-    if (!isReadyToJoin) return;
-    console.log('MAIN');
-
-    ws.current = new WebSocket('ws://localhost:3001');
-
-    ws.current.onopen = () => {
-      console.log('Connected to Room');
-      ws.current.send(
-        JSON.stringify({
-          type: 'JOIN_ROOM',
-          payload: { roomName: roomId, name: nickname },
-        })
-      );
-    };
-
-    ws.current.onmessage = (event) => {
-      const parsed = JSON.parse(event.data);
-      const { type, payload } = parsed;
-      console.log('RX:', parsed);
-
-      if (parsed.type.startsWith('WEBRTC_')) {
-        handleWebRTCSignal(type, payload);
-        return;
-      }
-
-      switch (parsed.type) {
-        case 'ERROR':
-        case 'JOIN_ROOM_FAILED': {
-          // TODO: Replace with richer error messaging/retry guidance in the tutorial.
-          setJoinError(parsed.payload?.reason || 'Unable to join room.');
-          setTimeout(() => navigate('/'), 1200);
-          break;
-        }
-
-        case 'JOIN_ROOM_SUCCESS': {
-          const participantsPayload = parsed.payload?.participants || [];
-          const chatHistoryPayload = parsed.payload?.chatHistory || [];
-          setParticipants(participantsPayload);
-          setMessages(chatHistoryPayload);
-          break;
-        }
-
-        case 'ROOM_LIST_UPDATE':
-          if (parsed.payload.participants) {
-            setParticipants(parsed.payload.participants);
-          }
-          if (parsed.payload.chatHistory) {
-            setMessages(parsed.payload.chatHistory);
-          }
-          break;
-
-        case 'PARTICIPANTS_UPDATE': {
-          const updated = parsed.payload?.participants;
-          if (Array.isArray(updated)) {
-            setParticipants(updated);
-          }
-          break;
-        }
-
-        case 'CHAT_MESSAGE':
-          setMessages((prev) => [...prev, parsed.payload]);
-          break;
-
-        case 'REACTION': {
-          // Ephemeral realtime signal; we surface lightweight feedback, not stored history.
-          const { sender, emoji } = parsed.payload || {};
-          if (sender && emoji) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now(),
-                sender: 'Reaction',
-                text: `${sender} reacted with ${emoji}`,
-              },
-            ]);
-          }
-          break;
-        }
-
-        case 'TYPING': {
-          // Ephemeral realtime signal; should not be persisted.
-          const sender = parsed.payload?.sender;
-          const targetRoom = parsed.payload?.roomName;
-          if (targetRoom && targetRoom !== roomId) break;
-          if (sender && sender !== nickname) {
-            setTypingIndicator(`${sender} is typing...`);
-            if (typingTimeoutRef.current) {
-              clearTimeout(typingTimeoutRef.current);
-            }
-            typingTimeoutRef.current = setTimeout(() => {
-              setTypingIndicator('');
-              typingTimeoutRef.current = null;
-            }, 3000);
-          }
-          break;
-        }
-
-        case 'SYSTEM_MESSAGE':
-          setMessages((prev) => [
-            ...prev,
-            { id: Date.now(), sender: 'System', text: parsed.payload.text },
-          ]);
-          break;
-
-        case 'PARTICIPANT_JOINED':
-          setParticipants((prev) => [...prev, parsed.payload]);
-          connectToNewUser(parsed.payload.id);
-          break;
-
-        case 'PARTICIPANT_LEFT':
-          setParticipants((prev) =>
-            prev.filter((p) => p.id !== parsed.payload.id)
-          );
-          removePeer(payload.id);
-          break;
-
-        default:
-          break;
-      }
-    };
-
+    // TODO [Module 3 - Step 4]: Join the room via WebSocket and request initial state.
+    console.warn('TODO: join room over WebSocket.', { roomId, nickname });
     return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = null;
-      }
-      if (ws.current) ws.current.close();
+      // TODO [Module 3 - Steps 6, 10-11]: Notify server about leaving and clean up media/signaling.
+      console.warn('TODO: leave room and clean up.', { roomId });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, nickname, isReadyToJoin]);
+  }, [roomId, nickname]);
 
-  const logTodo = (label) => {
-    console.log(`TODO: ${label}`);
-    alert(`TODO: ${label}`);
-  };
+  useEffect(() => {
+    // TODO [Module 3 - Steps 5-7]: Register WebSocket message handlers for chat, participants,
+    // reactions, typing, and WebRTC signaling (handleWebRTCSignal/connectToNewUser/removePeer).
+    // TODO [Module 3 - Steps 9-11]: Trigger joinCall/leaveCall and route signaling to WebRTC hook.
+  }, [handleWebRTCSignal, connectToNewUser, removePeer]);
 
   const sendTyping = () => {
-    const now = Date.now();
-    if (now - lastTypingSentRef.current < 2000) return;
-    lastTypingSentRef.current = now;
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(
-        JSON.stringify({
-          type: 'TYPING',
-          payload: { roomName: roomId, sender: nickname },
-        })
-      );
-    }
+    console.warn('TODO: send TYPING indicator (Module 3 - Step 7).', {
+      roomId,
+      sender: nickname,
+    });
   };
 
   const handleDraftChange = (e) => {
@@ -209,27 +90,24 @@ const RoomPage = () => {
   const handleSend = () => {
     if (!draft.trim()) return;
 
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(
-        JSON.stringify({
-          type: 'CHAT_MESSAGE',
-          payload: { text: draft },
-        })
-      );
-      setDraft('');
-    }
+    console.warn('TODO: send CHAT_MESSAGE (Module 3 - Step 5).', {
+      roomId,
+      text: draft,
+    });
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now(), sender: nickname, text: draft },
+    ]);
+    setDraft('');
   };
 
   const handleReaction = (emoji) => {
     if (!emoji) return;
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(
-        JSON.stringify({
-          type: 'REACTION',
-          payload: { roomName: roomId, emoji, sender: nickname },
-        })
-      );
-    }
+    console.warn('TODO: send REACTION (Module 3 - Step 7).', {
+      roomId,
+      emoji,
+      sender: nickname,
+    });
   };
 
   const handleExit = () => {
@@ -257,24 +135,22 @@ const RoomPage = () => {
 
         <div className='card' style={{ padding: 16 }}>
           <h3 className='section-title'>Video Area</h3>
+          <p className='section-subtitle'>
+            Video tiles are placeholders; real streams appear after Module 3 Steps
+            9-10 wire up WebRTC.
+          </p>
           <div className='video-grid'>
             <div className='video-tile'>
-              {localStream ? (
-                <VideoPlayer stream={localStream} isLocal={true} />
-              ) : (
-                <div className='black-screen-placeholder'>
-                  Loading Camera...
-                </div>
-              )}
+              <VideoPlayer stream={localStream} isLocal={true} username={nickname} />
             </div>
 
-            {remoteStreams.map((peer) => {
+            {displayRemoteStreams.map((peer) => {
               const participant = participants.find(
                 (p) => String(p.id) === String(peer.id)
               );
               const displayName = participant
                 ? participant.name
-                : `User ${peer.id}`;
+                : 'Remote peer';
 
               return (
                 <div key={peer.id} className='video-tile'>
@@ -293,8 +169,7 @@ const RoomPage = () => {
               className={`btn btn-pill ${
                 !isAudioEnabled ? 'btn-danger' : 'btn-ghost'
               }`}
-              onClick={toggleAudio}
-              disabled={!localStream}
+              onClick={toggleMute}
             >
               {isAudioEnabled ? 'Mute' : 'Unmute'}
             </button>
@@ -304,8 +179,7 @@ const RoomPage = () => {
               className={`btn btn-pill ${
                 !isVideoEnabled ? 'btn-danger' : 'btn-ghost'
               }`}
-              onClick={toggleVideo}
-              disabled={!localStream}
+              onClick={toggleCamera}
             >
               {isVideoEnabled ? 'Stop Video' : 'Start Video'}
             </button>

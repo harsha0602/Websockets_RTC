@@ -1,3 +1,6 @@
+// Starter version of the Module 3 server: realtime/RTC handlers are intentionally stubbed.
+// TODO markers match Module 3 steps 2-11; follow the tutorial to fill in identity, lobby,
+// room management, chat, reactions/typing, and WebRTC signaling behavior.
 const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
 const MessageTypes = require('./messages');
@@ -103,293 +106,67 @@ wss.on('connection', (ws) => {
 
       switch (type) {
         case MessageTypes.ROOM_LIST_SUBSCRIBE: {
-          lobbySubscribers.add(ws);
+          // TODO [Module 3 - Step 3]: Subscribe the client to lobby updates and send the current room list.
+          console.warn('TODO handler for ROOM_LIST_SUBSCRIBE not implemented yet');
           sendJson(ws, {
             type: MessageTypes.ROOM_LIST_UPDATE,
-            payload: { rooms: getRoomMetaData() },
+            payload: { rooms: [] },
           });
           break;
         }
 
         case IDENTIFY_TYPE: {
-          const name = payload?.name;
-          if (name) {
-            const existing = clients.get(clientId) || {};
-            clients.set(clientId, { ...existing, ws, name });
-            userName = name;
-            console.log(`Client ${clientId} identified as ${name}`);
-          }
+          // TODO [Module 3 - Step 2]: Store the provided name for this client so future events use it.
+          console.warn('TODO handler for IDENTIFY not implemented yet');
           break;
         }
 
         case MessageTypes.CREATE_ROOM: {
-          const rawRoomName = payload?.roomName ?? payload?.name;
-          const roomName =
-            typeof rawRoomName === 'string' ? rawRoomName.trim() : '';
-          if (!roomName) {
-            sendError(ws, 'Room name must be a non-empty string.');
-            break;
-          }
-          if (roomExists(roomName)) {
-            sendError(ws, `Room "${roomName}" already exists.`);
-            break;
-          }
-
-          const identifiedName = clients.get(clientId)?.name;
-          const providedName = payload?.createdBy || payload?.name;
-          userName = identifiedName || providedName || `User ${clientId}`;
-          clients.set(clientId, { ws, name: userName });
-          currentRoomName = roomName;
-
-          const room = joinRoom(roomName, {
-            id: clientId,
-            name: userName,
+          // TODO [Module 3 - Step 4]: Validate and create a room, join the creator, and broadcast lobby/participant updates.
+          console.warn('TODO handler for CREATE_ROOM not implemented yet');
+          sendError(
             ws,
-          });
-
-          sendJson(ws, {
-            type: MessageTypes.CREATE_ROOM_SUCCESS,
-            payload: buildRoomStatePayload(room),
-          });
-          broadcastParticipantsUpdate(room);
-          broadcastRoomList();
+            'TODO: implement room creation and initial join (Module 3 - Step 4).'
+          );
           break;
         }
 
         case MessageTypes.JOIN_ROOM: {
-          // TODO: Require identification before allowing room joins.
-          const rawRoomName = payload?.roomName;
-          const roomName =
-            typeof rawRoomName === 'string' ? rawRoomName.trim() : '';
-          if (!roomName) {
-            sendError(ws, 'Room name must be provided to join.');
-            break;
-          }
-          if (!roomExists(roomName)) {
-            sendError(ws, `Room "${roomName}" does not exist.`);
-            break;
-          }
-
-          const name = payload?.name;
-          const identifiedName = clients.get(clientId)?.name;
-          userName = identifiedName || name || `User ${clientId}`;
-          clients.set(clientId, { ws, name: userName });
-          currentRoomName = roomName;
-
-          const room = joinRoom(roomName, { id: clientId, name: userName, ws });
-          const roomStatePayload = buildRoomStatePayload(room);
-
-          sendJson(ws, {
-            type: MessageTypes.JOIN_ROOM_SUCCESS,
-            payload: roomStatePayload,
-          });
-
-          broadcastParticipantsUpdate(room);
-          // Optional: also send a chat/system message to the room about the join.
-          broadcastToRoom(
-            room,
-            {
-              type: MessageTypes.SYSTEM_MESSAGE,
-              payload: { text: `${userName} joined the room` },
-            },
-            clientId
-          );
-
-          broadcastToRoom(
-            room,
-            {
-              type: 'PARTICIPANT_JOINED',
-              payload: { id: clientId, name: userName },
-            },
-            clientId
-          );
-          broadcastToRoom(
-            room,
-            {
-              type: MessageTypes.ROOM_LIST_UPDATE,
-              payload: {
-                roomId: room.id,
-                roomName: room.name,
-                participants: roomStatePayload.participants,
-              },
-            },
-            clientId
-          );
-          broadcastRoomList();
+          // TODO [Module 3 - Step 4]: Validate and join an existing room, then broadcast participant updates and system messages.
+          console.warn('TODO handler for JOIN_ROOM not implemented yet');
+          sendError(ws, 'TODO: implement joining rooms (Module 3 - Step 4).');
           break;
         }
 
         case MessageTypes.LEAVE_ROOM: {
-          const rawRoomName = payload?.roomName;
-          const roomName =
-            typeof rawRoomName === 'string' ? rawRoomName.trim() : '';
-          if (!roomName) {
-            sendError(ws, 'Room name must be provided to leave.');
-            break;
-          }
-          if (!roomExists(roomName)) {
-            sendError(ws, `Room "${roomName}" does not exist.`);
-            break;
-          }
-
-          const room = getOrCreateRoom(roomName);
-          const removed = removeParticipant(room, clientId);
-          if (!removed) {
-            sendError(ws, `You are not a member of room "${roomName}".`);
-            break;
-          }
-
-          currentRoomName = null;
-          broadcastParticipantsUpdate(room);
-          // Optional: also send a chat/system message to the room about the leave.
-          broadcastToRoom(room, {
-            type: MessageTypes.SYSTEM_MESSAGE,
-            payload: { text: `${userName} left the room` },
-          });
-          broadcastToRoom(room, {
-            type: 'PARTICIPANT_LEFT',
-            payload: { id: clientId },
-          });
-          broadcastRoomList();
+          // TODO [Module 3 - Step 6]: Remove a participant from a room and broadcast updates when they leave.
+          console.warn('TODO handler for LEAVE_ROOM not implemented yet');
+          sendError(ws, 'TODO: implement leaving rooms (Module 3 - Step 6).');
           break;
         }
 
         case MessageTypes.CHAT_MESSAGE: {
-          const incomingRoom =
-            typeof payload?.roomName === 'string'
-              ? payload.roomName.trim()
-              : currentRoomName;
-          const roomName = typeof incomingRoom === 'string' ? incomingRoom : '';
-          const text =
-            typeof payload?.text === 'string' ? payload.text.trim() : '';
+          // TODO [Module 3 - Step 5]: Persist chat messages and broadcast them to everyone in the room.
+          console.warn('TODO handler for CHAT_MESSAGE not implemented yet');
+          sendError(ws, 'TODO: implement chat messaging (Module 3 - Step 5).');
+          break;
+        }
 
-          if (!roomName) {
-            sendError(ws, 'Chat messages must include a roomName.');
-            break;
-          }
-          if (!text) {
-            sendError(ws, 'Chat messages must include text content.');
-            break;
-          }
-          if (!roomExists(roomName)) {
-            sendError(ws, `Room "${roomName}" does not exist.`);
-            break;
-          }
-
-          const room = getOrCreateRoom(roomName);
-          const participantKey = String(clientId);
-          const participant = room.participants.get(participantKey);
-
-          if (!participant) {
-            sendError(ws, `You are not a member of room "${roomName}".`);
-            break;
-          }
-
-          const senderName =
-            participant.name ||
-            clients.get(clientId)?.name ||
-            payload?.sender ||
-            `User ${clientId}`;
-
-          const chatEntry = addChatMessage(room, {
-            roomName,
-            senderId: participant.id,
-            sender: senderName,
-            text,
-          });
-
-          broadcastToRoom(room, {
-            type: MessageTypes.CHAT_MESSAGE,
-            payload: { ...chatEntry, roomName },
-          });
+        case MessageTypes.PARTICIPANTS_UPDATE: {
+          // TODO [Module 3 - Step 6]: Broadcast the current participant roster to the room.
+          console.warn('TODO handler for PARTICIPANTS_UPDATE not implemented yet');
           break;
         }
 
         case MessageTypes.REACTION: {
-          const incomingRoom =
-            typeof payload?.roomName === 'string'
-              ? payload.roomName.trim()
-              : currentRoomName;
-          const roomName = typeof incomingRoom === 'string' ? incomingRoom : '';
-          const emoji =
-            typeof payload?.emoji === 'string' ? payload.emoji.trim() : '';
-
-          if (!roomName) {
-            sendError(ws, 'Reaction messages must include a roomName.');
-            break;
-          }
-          if (!emoji) {
-            sendError(ws, 'Reaction messages must include an emoji.');
-            break;
-          }
-          if (!roomExists(roomName)) {
-            sendError(ws, `Room "${roomName}" does not exist.`);
-            break;
-          }
-
-          const room = getOrCreateRoom(roomName);
-          const participant = room.participants.get(String(clientId));
-          if (!participant) {
-            sendError(ws, `You are not a member of room "${roomName}".`);
-            break;
-          }
-
-          const senderName =
-            participant.name ||
-            clients.get(clientId)?.name ||
-            payload?.sender ||
-            `User ${clientId}`;
-
-          broadcastToRoom(room, {
-            type: MessageTypes.REACTION,
-            payload: {
-              roomName,
-              emoji,
-              sender: senderName,
-              timestamp: new Date().toISOString(),
-            },
-          });
+          // TODO [Module 3 - Step 7]: Relay reaction events to other participants in the room.
+          console.warn('TODO handler for REACTION not implemented yet');
           break;
         }
 
         case MessageTypes.TYPING: {
-          const incomingRoom =
-            typeof payload?.roomName === 'string'
-              ? payload.roomName.trim()
-              : currentRoomName;
-          const roomName = typeof incomingRoom === 'string' ? incomingRoom : '';
-
-          if (!roomName) {
-            sendError(ws, 'Typing messages must include a roomName.');
-            break;
-          }
-          if (!roomExists(roomName)) {
-            sendError(ws, `Room "${roomName}" does not exist.`);
-            break;
-          }
-
-          const room = getOrCreateRoom(roomName);
-          const participant = room.participants.get(String(clientId));
-          if (!participant) {
-            sendError(ws, `You are not a member of room "${roomName}".`);
-            break;
-          }
-
-          const senderName =
-            participant.name ||
-            clients.get(clientId)?.name ||
-            payload?.sender ||
-            `User ${clientId}`;
-
-          // Clients should avoid spamming typing events; consider throttling on the sender.
-          broadcastToRoom(
-            room,
-            {
-              type: MessageTypes.TYPING,
-              payload: { roomName, sender: senderName },
-            },
-            clientId
-          );
+          // TODO [Module 3 - Step 7]: Relay typing indicators to other participants in the room.
+          console.warn('TODO handler for TYPING not implemented yet');
           break;
         }
 
@@ -397,46 +174,8 @@ wss.on('connection', (ws) => {
         case MessageTypes.WEBRTC_OFFER:
         case MessageTypes.WEBRTC_ANSWER:
         case MessageTypes.WEBRTC_ICE_CANDIDATE: {
-          console.log(
-            `[Signal] ${type} from ${clientId} to target: ${payload.targetId}`
-          );
-
-          if (!currentRoomName) return;
-          const room = getOrCreateRoom(currentRoomName);
-
-          if (payload.targetId) {
-            let target = room.participants.get(payload.targetId);
-
-            if (!target) {
-              target = room.participants.get(Number(payload.targetId));
-            }
-
-            if (!target) {
-              target = room.participants.get(String(payload.targetId));
-            }
-
-            if (target && target.ws.readyState === WebSocket.OPEN) {
-              target.ws.send(
-                JSON.stringify({
-                  type: type,
-                  payload: { ...payload, senderId: clientId },
-                })
-              );
-            } else {
-              console.warn(
-                `Target user ${payload.targetId} not found or disconnected.`
-              );
-            }
-          } else {
-            broadcastToRoom(
-              room,
-              {
-                type: type,
-                payload: { ...payload, senderId: clientId },
-              },
-              clientId
-            );
-          }
+          // TODO [Module 3 - Steps 8-11]: Relay WebRTC signaling messages to the appropriate peer(s).
+          console.warn(`TODO handler for ${type} not implemented yet`);
           break;
         }
 
@@ -453,26 +192,11 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     console.log('Client disconnected', { clientId });
-    clients.delete(clientId);
-    lobbySubscribers.delete(ws);
-    const participantRemovedFromRooms = removeParticipantFromAllRooms(clientId);
-
-    participantRemovedFromRooms.forEach((room) => {
-      broadcastToRoom(room, {
-        type: MessageTypes.SYSTEM_MESSAGE,
-        payload: { text: `${userName} left the room` },
-      });
-
-      broadcastToRoom(room, {
-        type: 'PARTICIPANT_LEFT',
-        payload: { id: clientId },
-      });
-      broadcastParticipantsUpdate(room);
-    });
-
-    if (participantRemovedFromRooms.length > 0) {
-      broadcastRoomList();
-    }
+    // TODO [Module 3 - Steps 6, 10-11]: Clean up room membership, notify remaining
+    // participants, and tear down WebRTC signaling/state on disconnect.
+    console.warn(
+      'TODO: disconnect cleanup not implemented; add participant and signaling teardown in Module 3.'
+    );
   });
 });
 

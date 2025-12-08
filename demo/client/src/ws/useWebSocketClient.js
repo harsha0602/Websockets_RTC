@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Basic WebSocket client hook for the demo.
+ * Basic WebSocket client hook for the demo (starter version).
  * TODO: expand into a structured message router with typed handlers.
  */
 function useWebSocketClient(url, onMessage) {
@@ -13,32 +13,15 @@ function useWebSocketClient(url, onMessage) {
   }, [onMessage]);
 
   useEffect(() => {
-    const socket = new WebSocket(url);
-    socketRef.current = socket;
-
-    socket.onmessage = (event) => {
-      try {
-        const parsed = JSON.parse(event.data);
-        if (onMessageRef.current) {
-          onMessageRef.current(parsed);
-        }
-      } catch (err) {
-        console.error('Failed to parse WebSocket message', err);
-      }
-    };
-
-    return () => {
-      socket.close();
-    };
+    // TODO [Module 3 - Step 2 & 3]: open a WebSocket connection, wire message routing,
+    // and handle cleanup when the component unmounts or url changes.
   }, [url]);
 
   const sendJsonMessage = (message) => {
-    const socket = socketRef.current;
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      console.warn('WebSocket is not open; message not sent.');
-      return;
-    }
-    socket.send(JSON.stringify(message));
+    console.warn(
+      'TODO: sendJsonMessage called but WebSocket is not wired yet (Module 3 - Step 2 & 3).',
+      message
+    );
   };
 
   return {

@@ -1,3 +1,5 @@
+// MessageTypes used by the WebSocket/WebRTC protocol.
+// Learners will reference these constants throughout Module 3 when wiring handlers.
 const MessageTypes = {
   ROOM_LIST_SUBSCRIBE: 'ROOM_LIST_SUBSCRIBE',
   ROOM_LIST_UPDATE: 'ROOM_LIST_UPDATE',
