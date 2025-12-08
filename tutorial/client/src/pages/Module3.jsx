@@ -2,6 +2,22 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Modules.css';
 
+function StepCard({ title, summary, meta, onClick }) {
+  return (
+    <div
+      className="step-card"
+      onClick={onClick}
+      style={onClick ? { cursor: 'pointer' } : undefined}
+    >
+      <div className="step-card-header">
+        <h3>{title}</h3>
+        <span className="step-badge">{meta}</span>
+      </div>
+      <p>{summary}</p>
+    </div>
+  );
+}
+
 function StepDetail({
   id,
   stepLabel,
@@ -393,12 +409,12 @@ function Module3() {
       ],
       checkpoint: 'You can sketch the signaling flow for a user joining: which WEBRTC_* messages move over WebSockets, who originates them, and how the server forwards them.',
       quickCheck: [
-        'Which message types carry WebRTC signaling in this app?',
-        'Who sends offers vs. answers when a new participant joins?',
+        'Which message types carry WebRTC offers, answers, and ICE candidates?',
+        'Which side sends each of these messages during a typical call setup?',
       ],
       hints: [
-        'Reuse the same sendJsonMessage helper for WEBRTC_* types; no new transport is needed.',
-        'The server should only tag senderId and forward the payload; it should not interpret SDP.',
+        'Search demo/server/src/messages.js for WebRTC specific message types.',
+        'In demo/server/src/index.js, find where these messages are forwarded between participants.',
       ],
     },
     {
@@ -420,12 +436,12 @@ function Module3() {
       ],
       checkpoint: 'Clicking Join call starts the camera and shows your own video in the first tile; leaving the room removes your tile and stops local tracks.',
       quickCheck: [
-        'Do the Mute/Video controls stay disabled until local media is available?',
-        'After clicking Join call, do you see a mirrored local video tile?',
+        'What happens in the code when you click Join call?',
+        'Where is the local MediaStream stored, and how is it passed to the video component?',
       ],
       hints: [
-        'Set video transform: scaleX(-1) for the local feed to mirror it.',
-        'Only add tracks to PeerConnections after getUserMedia resolves successfully.',
+        'Look at the joinCall implementation in useWebRTC.',
+        'Check VideoPlayer to see how it attaches a MediaStream to a video element.',
       ],
     },
     {
@@ -448,12 +464,12 @@ function Module3() {
       ],
       checkpoint: 'With two tabs in the same room, both tabs show their own video plus the other user’s video; when one tab leaves, the other removes the remote tile.',
       quickCheck: [
-        'Do you see the other tab’s video after both click Join call?',
-        'Does the remote tile disappear when the other tab closes or leaves?',
+        'When a second user joins the call, which WebRTC events fire on each side?',
+        'Where in the code do remote streams get added to state?',
       ],
       hints: [
-        'Use the participant id from signaling payloads to key PeerConnections and remote streams.',
-        'Close RTCPeerConnection instances immediately when a participant leaves to free resources.',
+        'Search for onicecandidate and ontrack handlers in useWebRTC.',
+        'Make sure each remote stream is associated with a participant id so the UI can keep them distinct.',
       ],
     },
     {
@@ -474,22 +490,25 @@ function Module3() {
       ],
       checkpoint: 'You can mute/unmute and toggle the camera mid-call, and leaving reliably clears all tiles and releases camera/mic access in both tabs.',
       quickCheck: [
-        'Do the mute/video buttons reflect the current track state?',
-        'After leaving the room, is the camera light off and are remote tiles removed?',
+        'Does toggling mute/camera actually change the track.enabled flags?',
+        'After leaving a call, are all PeerConnections closed and streams cleared?',
       ],
       hints: [
-        'Toggle the track.enabled flag instead of removing tracks to keep negotiation simple.',
-        'Run leaveCall from useEffect cleanup to cover navigation away or tab closes.',
+        'Inspect toggleMute and toggleCamera for how they update media tracks.',
+        'leaveCall should stop tracks, close PeerConnections, and reset local/remote state; ensure RoomPage calls it on unmount.',
       ],
     },
   ];
 
-  const handleCardClick = (anchor) => {
-    if (!anchor) return;
-    const el = document.getElementById(anchor);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  const stepsWithNumbers = steps.map((step, index) => ({ ...step, number: index }));
+  const phase1Steps = stepsWithNumbers.slice(0, 8);
+  const phase2Steps = stepsWithNumbers.slice(8);
+  const phase1Details = stepDetails.slice(0, 8);
+  const phase2Details = stepDetails.slice(8);
+
+  const handleCardClick = (stepNumber) => {
+    const el = document.getElementById(`step-${stepNumber}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -504,22 +523,20 @@ function Module3() {
 
       <main className="main-content">
         <h1>Module 3: Building the Realtime Study Rooms demo</h1>
-        <p>This is the hands-on module where you will build the Realtime Study Rooms demo: start with WebSockets for lobby updates, presence, and chat, then layer WebRTC on the same signaling channel to add video inside each room.</p>
+        <p>This is the hands-on module where you will build the Realtime Study Rooms demo in two phases: first wire the lobby and rooms with WebSockets for presence, chat, and reactions, then layer WebRTC on the same signaling channel to add video calling inside each room.</p>
         <p>By the end of these steps, you will have a synchronized lobby and room experience plus a basic video call with media controls that you can reuse in your own projects.</p>
 
         <section>
           <h2>Learning Outcomes</h2>
           <ul>
-            <li>Run the starter UI and confirm the baseline lobby and room routes (Feature 0).</li>
-            <li>Explain the WebSocket message types that drive lobby and room state (Feature 1).</li>
-            <li>Establish a single WebSocket connection per tab and identify users by nickname (Feature 2).</li>
-            <li>Render a live lobby list and implement validated create/join flows with server feedback (Features 3–4).</li>
-            <li>Build a synchronized room chat timeline and accurate participants list (Features 5–6).</li>
-            <li>Add reactions and typing indicators to layer lightweight realtime signals onto chat (Feature 7).</li>
-            <li>Understand WebRTC signaling messages and how they ride on the WebSocket transport (Feature 8).</li>
-            <li>Join a call and render your local camera feed in the first video tile (Feature 9).</li>
-            <li>Establish peer connections so remote participants appear as additional video tiles (Feature 10).</li>
-            <li>Wire Mute / Toggle camera / Leave call buttons to real media controls and teardown logic (Feature 11).</li>
+            <li>Run the starter project and navigate between the lobby and room views to see the baseline routes.</li>
+            <li>Describe the WebSocket message protocol for room list updates, join/leave flows, chat, participants, reactions, and typing.</li>
+            <li>Build a realtime lobby list and validated create/join flow driven by WebSocket responses.</li>
+            <li>Implement in-room chat plus a live participants list, layering reactions and typing indicators on top.</li>
+            <li>Explain how WebRTC uses the existing WebSocket channel for offer, answer, and ICE signaling.</li>
+            <li>Join a call and render your own mirrored video tile after getting camera/mic access.</li>
+            <li>Connect to remote peers so multiple participant video tiles appear with names.</li>
+            <li>Use Mute, Toggle camera, and Leave call controls to manage media and clean up WebRTC state.</li>
           </ul>
         </section>
 
@@ -539,29 +556,48 @@ function Module3() {
 
         <section>
           <h2>Build steps overview</h2>
-          <p>Follow these steps to evolve the starter lobby into a synchronized study room experience and then layer in WebRTC video.</p>
-          <div className="step-grid">
-            {steps.map((step) => (
-              <div
-                key={step.title}
-                className="step-card"
-                onClick={() => handleCardClick(step.anchor)}
-                style={step.anchor ? { cursor: 'pointer' } : undefined}
-              >
-                <div className="step-card-header">
-                  <h3>{step.title}</h3>
-                  <span className="step-badge">{step.meta}</span>
-                </div>
-                <p>{step.summary}</p>
+          <p>Follow these steps in two phases: start with WebSockets to wire the lobby, chat, and presence flows, then add WebRTC video on top.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <h3 style={{ marginBottom: '8px' }}>Phase 1: WebSockets</h3>
+              <div className="step-grid">
+                {phase1Steps.map((step) => (
+                  <StepCard
+                    key={step.title}
+                    title={step.title}
+                    summary={step.summary}
+                    meta={step.meta}
+                    onClick={() => handleCardClick(step.number)}
+                  />
+                ))}
               </div>
-            ))}
+            </div>
+            <div>
+              <h3 style={{ marginBottom: '8px' }}>Phase 2: WebRTC</h3>
+              <div className="step-grid">
+                {phase2Steps.map((step) => (
+                  <StepCard
+                    key={step.title}
+                    title={step.title}
+                    summary={step.summary}
+                    meta={step.meta}
+                    onClick={() => handleCardClick(step.number)}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
         <section style={{ marginTop: '28px' }}>
           <h2>Detailed walkthrough</h2>
           <p>Use these notes when you are ready to implement each step. They line up with the demo notes and keep you anchored to the goals and checkpoints.</p>
-          {stepDetails.map((detail) => (
+          <h3 style={{ marginTop: '16px' }}>Phase 1: WebSockets</h3>
+          {phase1Details.map((detail) => (
+            <StepDetail key={detail.id} {...detail} />
+          ))}
+          <h3 style={{ marginTop: '24px' }}>Phase 2: WebRTC</h3>
+          {phase2Details.map((detail) => (
             <StepDetail key={detail.id} {...detail} />
           ))}
         </section>
