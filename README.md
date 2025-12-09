@@ -1,7 +1,41 @@
 # Websockets_RTC
-## Demo app: WebSockets + WebRTC study rooms
-- Tutorial materials live in `./tutorial` for learning the stack and patterns.
-- Demo backend runs from `./demo/server` (Node) to provide WebSocket signaling and room coordination.
-- Demo frontend lives in `./demo/client` (React) for the study room UI and WebRTC streams.
-- Run the backend by installing dependencies, setting any required env vars, and starting the Node server locally.
-- Run the frontend by installing dependencies, pointing it at the backend URL, and launching the React dev server.
+
+## Tutorial
+
+The `tutorial/` folder contains the step-by-step learning materials used to build this stack.
+
+Run the tutorial client:
+
+```bash
+cd tutorial/client
+npm install
+npm run dev
+```
+
+## Websockets + WebRTC Study Rooms
+
+A real-time video call and chat application using Node.js (WebSocket signaling) and React (WebRTC).
+
+## 🚀 Demo App
+
+The complete working application is located in the `demo/` folder. You need to run the backend and frontend in two separate terminals.
+
+### 1. Start the Backend
+
+Runs the signaling server on port `3001`.
+
+```bash
+cd demo/server
+npm install
+npm run dev
+```
+
+### 2. Start the Frontend
+
+Runs the React client on port `5173`.
+
+```bash
+cd demo/client
+npm install
+npm run dev
+```
