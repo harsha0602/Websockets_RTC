@@ -1,0 +1,226 @@
+.home-shell {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f6fff8, #eef4ff);
+    padding: 48px 24px 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #1f2a33;
+}
+
+.hero-card {
+    width: min(1080px, 100%);
+    background: #ffffff;
+    border: 1px solid #e5e9f0;
+    border-radius: 18px;
+    padding: 36px 42px;
+    box-shadow: 0 14px 45px -28px rgba(0, 0, 0, 0.35);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-card::before {
+    content: '';
+    position: absolute;
+    inset: -45% 68% auto -8%;
+    height: 260px;
+    background: radial-gradient(circle at center, #04aa6d26, transparent 60%);
+    pointer-events: none;
+}
+
+.eyebrow {
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    color: #04AA6D;
+    font-weight: 700;
+}
+
+.hero-card h1 {
+    margin: 8px 0 6px 0;
+    font-size: clamp(2rem, 4vw, 2.7rem);
+}
+
+.hero-card h2 {
+    margin: 0 0 12px 0;
+    font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+    color: #1f5b3f;
+    font-weight: 700;
+}
+
+.lede {
+    max-width: 760px;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #3b4a59;
+}
+
+.pill-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.pill {
+    background: #eaf7f0;
+    color: #0a7b4a;
+    border: 1px solid #c9e9d5;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.cta-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+}
+
+.start-button {
+    background: linear-gradient(120deg, #04AA6D, #038354);
+    color: white;
+    border: none;
+    text-decoration: none;
+    padding: 14px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+    box-shadow: 0 14px 32px -18px #028b5b;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.01em;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.start-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 20px 38px -20px #028b5b;
+}
+
+.chevron {
+    font-size: 1.1rem;
+}
+
+.cta-note {
+    color: #4c5c6c;
+    font-weight: 600;
+}
+
+.info-grid {
+    margin-top: 28px;
+    width: min(1080px, 100%);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+}
+
+.info-card {
+    background: #ffffff;
+    border: 1px solid #e4e8ef;
+    border-radius: 14px;
+    padding: 18px 18px;
+    display: flex;
+    gap: 14px;
+    box-shadow: 0 12px 36px -30px rgba(0, 0, 0, 0.35);
+}
+
+.info-card h3 {
+    margin: 0 0 6px 0;
+    font-size: 1.2rem;
+    color: #0f5132;
+}
+
+.info-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.05rem;
+    color: #1f2a33;
+}
+
+.info-card p {
+    margin: 0 0 10px 0;
+    color: #3b4a59;
+    line-height: 1.6;
+}
+
+.card-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #eaf7f0, #d6f1e4);
+    border: 1px solid #cde7d8;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.key-points {
+    margin: 0;
+    padding-left: 18px;
+    color: #425061;
+    line-height: 1.5;
+}
+
+.key-points li {
+    margin-bottom: 6px;
+}
+
+.info-card.neutral {
+    display: block;
+    background: #f7fafc;
+    border-color: #d9e2ec;
+    box-shadow: none;
+}
+
+.steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #04AA6D;
+    color: white;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.step p {
+    margin: 4px 0 0 0;
+    color: #425061;
+}
+
+.home-footer {
+    margin-top: 32px;
+    color: #55616f;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .hero-card {
+        padding: 28px 24px;
+    }
+
+    .cta-row {
+        align-items: flex-start;
+    }
+}
