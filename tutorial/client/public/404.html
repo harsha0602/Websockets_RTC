@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting...</title>
+    <script>
+      // Single Page App redirect for GitHub Pages
+      // Converts the path to a query string and redirects to index.html
+      // index.html will then restore the correct route
+      const pathSegmentsToKeep = 1; // Keep /Websockets_RTC/
+      const location = window.location;
+      const path = location.pathname.split('/').slice(pathSegmentsToKeep + 1).join('/');
+      const search = location.search;
+      const hash = location.hash;
+
+      location.replace(
+        location.origin + '/Websockets_RTC/' +
+        '?p=/' + path +
+        (search ? '&q=' + encodeURIComponent(search.slice(1)) : '') +
+        hash
+      );
+    </script>
+  </head>
+  <body>
+    <p>Redirecting...</p>
+  </body>
+</html>
