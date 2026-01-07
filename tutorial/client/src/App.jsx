@@ -14,7 +14,7 @@ function ScrollToTop() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/Websockets_RTC">
       <ScrollToTop />
       <Routes>
         <Route path='/' element={<Home />} />
